@@ -7,6 +7,7 @@ from database import create_connection
 routes = Blueprint('todos', __name__)
 
 @routes.route('/todos', methods=['GET'])
+
 def get_todos():
     conn = create_connection()
     if conn:
