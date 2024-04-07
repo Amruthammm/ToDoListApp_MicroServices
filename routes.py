@@ -3,12 +3,27 @@
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 from database import create_connection
+from auth import authenticate_token
 
 routes = Blueprint('todos', __name__)
 
 @routes.route('/todos', methods=['GET'])
 
 def get_todos():
+    token = request.headers.get('Authorization')
+
+    if not token:
+        return jsonify({'error': 'Token is missing'}), 401
+
+    # Extract the token from the "Bearer" scheme
+    token = token.split(" ")[1] if token.startswith("Bearer ") else None
+
+    if not token:
+        return jsonify({'error': 'Invalid token format'}), 401
+
+    if not authenticate_token(token):
+        return jsonify({'error': 'Invalid token'}), 401
+
     conn = create_connection()
     if conn:
         try:
@@ -39,9 +54,20 @@ def get_todos():
 
 @routes.route('/todos', methods=['POST'])
 def create_todo():
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
+    token = request.headers.get('Authorization')
+    data = request.json
+
+    if not token:
+        return jsonify({'error': 'Token is missing'}), 401
+
+    # Extract the token from the "Bearer" scheme
+    token = token.split(" ")[1] if token.startswith("Bearer ") else None
+
+    if not token:
+        return jsonify({'error': 'Invalid token format'}), 401
+
+    if not authenticate_token(token):
+        return jsonify({'error': 'Invalid token'}), 401
     conn = create_connection()
     if conn:
         try:
@@ -64,9 +90,21 @@ def create_todo():
 
 @routes.route('/todos/<int:todo_id>', methods=['PUT'])
 def update_todo(todo_id):
-    data = request.get_json()
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
+    token = request.headers.get('Authorization')
+    data = request.json
+
+    if not token:
+        return jsonify({'error': 'Token is missing'}), 401
+
+    # Extract the token from the "Bearer" scheme
+    token = token.split(" ")[1] if token.startswith("Bearer ") else None
+
+    if not token:
+        return jsonify({'error': 'Invalid token format'}), 401
+
+    if not authenticate_token(token):
+        return jsonify({'error': 'Invalid token'}), 401
+
     conn = create_connection()
     if conn:
         try:
@@ -90,6 +128,19 @@ def update_todo(todo_id):
 
 @routes.route('/todos/<int:todo_id>', methods=['DELETE'])
 def delete_todo(todo_id):
+    token = request.headers.get('Authorization')
+
+    if not token:
+        return jsonify({'error': 'Token is missing'}), 401
+
+    # Extract the token from the "Bearer" scheme
+    token = token.split(" ")[1] if token.startswith("Bearer ") else None
+
+    if not token:
+        return jsonify({'error': 'Invalid token format'}), 401
+
+    if not authenticate_token(token):
+        return jsonify({'error': 'Invalid token'}), 401
     conn = create_connection()
     if conn:
         try:
