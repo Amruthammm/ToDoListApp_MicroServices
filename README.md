@@ -12,3 +12,25 @@ Flask: Python web framework for building microservices
 SQL Server: Relational database management system
 pyodbc: Python library for connecting to SQL Server
 requests: HTTP library for making requests to external services
+
+**Setup**
+1. Clone the repository:
+
+2. Install dependencies:
+pip install -r requirements.txt
+
+3. Configure the database connection:
+Update the conn_str variable in database.py with your SQL Server connection string.
+
+4.Run the application:
+python app.py
+
+5. The application will start running at http://localhost:5000.
+API Endpoints
+GET /todos: Retrieve all todos
+POST /todos: Create a new todo
+PUT /todos/:todo_id: Update an existing todo
+DELETE /todos/:todo_id: Delete a todo
+
+6. Authentication
+To access todo endpoints, you need to provide a valid JWT token in the Authorization header.
