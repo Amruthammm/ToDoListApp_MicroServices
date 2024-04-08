@@ -15,13 +15,12 @@ requests: HTTP library for making requests to external services
 
 **Setup**
 1. Clone the repository:
-
+git@github.com:Amruthammm/ToDoListApp_MicroServices.git
 2. Install dependencies:
 pip install -r requirements.txt
 
 3. Configure the database connection:
-Update the conn_str variable in database.py with your SQL Server connection string.
-
+Update the conn_str variable in database.py with your SQL Server connection string
 4.Run the application:
 python app.py
 
