@@ -21,6 +21,7 @@ pip install -r requirements.txt
 
 3. Configure the database connection:
 Update the conn_str variable in database.py with your SQL Server connection string
+
 4.Run the application:
 python app.py
 
