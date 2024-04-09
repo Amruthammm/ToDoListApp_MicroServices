@@ -7,8 +7,7 @@ db = SQLAlchemy()
 
 class TodoList(db.Model):
     __tablename__ = 'todo_list'
-    todo_id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user_details.user_id'))
+    todo_id = db.Column(db.Integer, primary_key=True)   
     todo_description = db.Column(db.String(255))
     created_on = db.Column(db.DateTime, default=datetime.utcnow)
     updated_on = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -1,9 +1,11 @@
 # todos.py
 
 from datetime import datetime
+from models import TodoList
 from flask import Blueprint, jsonify, request
 from database import create_connection
 from auth import authenticate_token
+from database import db
 
 routes = Blueprint('todos', __name__)
 
@@ -24,33 +26,26 @@ def get_todos():
     if not authenticate_token(token):
         return jsonify({'error': 'Invalid token'}), 401
 
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM todo_list")
-            todos = cursor.fetchall()
-            result = []
-            for todo in todos:
-                result.append({
-                    'todo_id': todo.todo_id,
-                    'user_id': todo.user_id,
-                    'todo_description': todo.todo_description,
-                    'created_on': todo.created_on.strftime('%Y-%m-%d %H:%M:%S'),
-                    'updated_on': todo.updated_on.strftime('%Y-%m-%d %H:%M:%S'),
-                    'status': todo.status,
-                    'priority': todo.priority,
-                    'due_date': todo.due_date.strftime('%Y-%m-%d %H:%M:%S') if todo.due_date else None
-                })
-            return jsonify(result), 200
-        except Exception as e:
-            print("Error executing query:", e)
-            return jsonify({'error': 'Error fetching todos'}), 500
-        finally:
-            cursor.close()
-            conn.close()
-    else:
-        return jsonify({'error': 'Database connection error'}), 500
+    try:
+        # Query all todos from the database
+        todos = TodoList.query.all()
+
+        # Convert TodoList objects to dictionaries
+        result = [{
+            'todo_id': todo.todo_id,            
+            'todo_description': todo.todo_description,
+            'created_on': todo.created_on.strftime('%Y-%m-%d %H:%M:%S'),
+            'updated_on': todo.updated_on.strftime('%Y-%m-%d %H:%M:%S'),
+            'status': todo.status,
+            'priority': todo.priority,
+            'due_date': todo.due_date.strftime('%Y-%m-%d %H:%M:%S') if todo.due_date else None
+        } for todo in todos]
+
+        return jsonify(result), 200
+    except Exception as e:
+        print("Error fetching todos:", e)
+        return jsonify({'error': 'Error fetching todos'}), 500
+    
 
 @routes.route('/todos', methods=['POST'])
 def create_todo():
@@ -68,26 +63,29 @@ def create_todo():
 
     if not authenticate_token(token):
         return jsonify({'error': 'Invalid token'}), 401
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO todo_list (todo_id, user_id, todo_description, created_on, updated_on, status, priority, due_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (data.get('todo_id'),data.get('user_id'), data.get('todo_description'), datetime.utcnow(), datetime.utcnow(), data.get('status'), data.get('priority'), data.get('due_date')))
-            conn.commit()
-            return jsonify({'message': 'Todo created successfully'}), 201
-        except Exception as e:
-            print("Error executing query:", e)
-            conn.rollback()
-            return jsonify({'error': 'Error creating todo'}), 500
-        finally:
-            cursor.close()
-            conn.close()
-    else:
-        return jsonify({'error': 'Database connection error'}), 500
 
+    try:
+        # Create a new TodoList object
+        todo = TodoList(
+            todo_id=data.get('todo_id'),
+            todo_description=data.get('todo_description'),
+            created_on=datetime.utcnow(),
+            updated_on=datetime.utcnow(),
+            status=data.get('status'),
+            priority=data.get('priority'),
+            due_date=data.get('due_date')
+        )
+
+        # Add the new TodoList object to the database session
+        db.session.add(todo)
+        db.session.commit()
+
+        return jsonify({'message': 'Todo created successfully'}), 201
+    except Exception as e:
+        print("Error creating todo:", e)
+        db.session.rollback()
+        return jsonify({'error': 'Error creating todo'}), 500
+    
 @routes.route('/todos/<int:todo_id>', methods=['PUT'])
 def update_todo(todo_id):
     token = request.headers.get('Authorization')
@@ -105,26 +103,28 @@ def update_todo(todo_id):
     if not authenticate_token(token):
         return jsonify({'error': 'Invalid token'}), 401
 
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("""
-                UPDATE todo_list
-                SET user_id=?, todo_description=?, updated_on=?, status=?, priority=?, due_date=?
-                WHERE todo_id=?
-            """, (data.get('user_id'), data.get('todo_description'), datetime.utcnow(), data.get('status'), data.get('priority'), data.get('due_date'), todo_id))
-            conn.commit()
+    try:
+        # Query the todo to update
+        todo = TodoList.query.filter_by(todo_id=todo_id).first()
+
+        if todo:
+            # Update todo attributes
+            todo.todo_description = data.get('todo_description')
+            todo.updated_on = datetime.utcnow()
+            todo.status = data.get('status')
+            todo.priority = data.get('priority')
+            todo.due_date = data.get('due_date')
+
+            # Commit changes to the database
+            db.session.commit()
+
             return jsonify({'message': 'Todo updated successfully'}), 200
-        except Exception as e:
-            print("Error executing query:", e)
-            conn.rollback()
-            return jsonify({'error': 'Error updating todo'}), 500
-        finally:
-            cursor.close()
-            conn.close()
-    else:
-        return jsonify({'error': 'Database connection error'}), 500
+        else:
+            return jsonify({'error': 'Todo not found'}), 404
+    except Exception as e:
+        print("Error updating todo:", e)
+        db.session.rollback()
+        return jsonify({'error': 'Error updating todo'}), 500
 
 @routes.route('/todos/<int:todo_id>', methods=['DELETE'])
 def delete_todo(todo_id):
@@ -141,19 +141,20 @@ def delete_todo(todo_id):
 
     if not authenticate_token(token):
         return jsonify({'error': 'Invalid token'}), 401
-    conn = create_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM todo_list WHERE todo_id=?", (todo_id,))
-            conn.commit()
+
+    try:
+        # Query the todo to delete
+        todo = TodoList.query.filter_by(todo_id=todo_id).first()
+
+        if todo:
+            # Delete the todo
+            db.session.delete(todo)
+            db.session.commit()
+
             return jsonify({'message': 'Todo deleted successfully'}), 200
-        except Exception as e:
-            print("Error executing query:", e)
-            conn.rollback()
-            return jsonify({'error': 'Error deleting todo'}), 500
-        finally:
-            cursor.close()
-            conn.close()
-    else:
-        return jsonify({'error': 'Database connection error'}), 500
+        else:
+            return jsonify({'error': 'Todo not found'}), 404
+    except Exception as e:
+        print("Error deleting todo:", e)
+        db.session.rollback()
+        return jsonify({'error': 'Error deleting todo'}), 500
