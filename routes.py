@@ -54,16 +54,13 @@ def create_todo():
 
     if not token:
         return jsonify({'error': 'Token is missing'}), 401
-
     # Extract the token from the "Bearer" scheme
     token = token.split(" ")[1] if token.startswith("Bearer ") else None
-
     if not token:
         return jsonify({'error': 'Invalid token format'}), 401
 
     if not authenticate_token(token):
         return jsonify({'error': 'Invalid token'}), 401
-
     try:
         # Create a new TodoList object
         todo = TodoList(
@@ -75,11 +72,9 @@ def create_todo():
             priority=data.get('priority'),
             due_date=data.get('due_date')
         )
-
         # Add the new TodoList object to the database session
         db.session.add(todo)
         db.session.commit()
-
         return jsonify({'message': 'Todo created successfully'}), 201
     except Exception as e:
         print("Error creating todo:", e)
@@ -93,20 +88,15 @@ def update_todo(todo_id):
 
     if not token:
         return jsonify({'error': 'Token is missing'}), 401
-
     # Extract the token from the "Bearer" scheme
     token = token.split(" ")[1] if token.startswith("Bearer ") else None
-
     if not token:
         return jsonify({'error': 'Invalid token format'}), 401
-
     if not authenticate_token(token):
         return jsonify({'error': 'Invalid token'}), 401
-
     try:
         # Query the todo to update
         todo = TodoList.query.filter_by(todo_id=todo_id).first()
-
         if todo:
             # Update todo attributes
             todo.todo_description = data.get('todo_description')
@@ -114,7 +104,6 @@ def update_todo(todo_id):
             todo.status = data.get('status')
             todo.priority = data.get('priority')
             todo.due_date = data.get('due_date')
-
             # Commit changes to the database
             db.session.commit()
 
@@ -135,13 +124,12 @@ def delete_todo(todo_id):
 
     # Extract the token from the "Bearer" scheme
     token = token.split(" ")[1] if token.startswith("Bearer ") else None
-
     if not token:
         return jsonify({'error': 'Invalid token format'}), 401
 
     if not authenticate_token(token):
         return jsonify({'error': 'Invalid token'}), 401
-
+ 
     try:
         # Query the todo to delete
         todo = TodoList.query.filter_by(todo_id=todo_id).first()
