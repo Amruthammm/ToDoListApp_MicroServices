@@ -1,19 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: my-flask-app-deployment
+  name: todo-list-service
+  labels:
+    app: todo-list-service
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: my-flask-app
+      app: todo-list
   template:
     metadata:
       labels:
-        app: my-flask-app
+        app: todo-list-service
     spec:
       containers:
-        - name: my-flask-app-container
-          image: my-flask-app
+        - name: todo-list-service
+          image: todo-list-service:latest
+          imagePullPolicy: Never
           ports:
             - containerPort: 5000
